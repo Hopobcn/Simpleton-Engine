@@ -1,0 +1,66 @@
+
+jobs:
+  include:
+    - stage: test
+      os: linux
+      dist: xenial
+      language: python
+      python: 3.7
+      compiler: gcc
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['g++-7']
+      env:
+        - CC=gcc-7
+        - CXX=g++-7
+        - CONAN_PROFILE=linux-gcc7-amd64
+        - CONAN_LIBCXX_VERSION=libstdc++11
+        - PIP=pip
+      before_script:
+        - ${PIP} install conan
+        - conan config install https://github.com/Hopobcn/conan-config.git
+        - if [ ! -f "$HOME/.conan/profiles/default" ]; then conan profile new default --detect ; fi
+        - |
+          [ -n "${CONAN_COMPILER_VERSION}" ] && conan profile update settings.compiler.version=${CONAN_COMPILER_VERSION} default || true
+        - |
+          [ -n "${CONAN_LIBCXX_VERSION}" ] && conan profile update settings.compiler.libcxx=${CONAN_LIBCXX_VERSION} default || true
+        - conan profile list
+        - conan remote list
+      script:
+        - mkdir -p build && cd build
+        - conan install .. --build=missing #-pr ${CONAN_PROFILE} -s arch_build=x86_64 -s os_build=linux
+        - if [ "$TRAVIS_OS_NAME" = "osx"     ]; then cmake -DCMAKE_BUILD_TYPE=Release .. ; fi
+        - if [ "$TRAVIS_OS_NAME" = "linux"   ]; then cmake -DCMAKE_BUILD_TYPE=Release .. ; fi
+        - if [ "$TRAVIS_OS_NAME" = "windows" ]; then cmake -G "Visual Studio 15 Win64" .. ; fi
+        - cmake --build .
+
+    # Singleton is a header-only library - we don't need to create jobs for [os x compiler x compiler_version] only 1 is required
+    - stage: deploy
+      os: linux
+      sudo: required
+      language: python
+      python: '3.6'
+      env:
+        - CONAN_GCC_VERSIONS=8
+        - CONAN_DOCKER_IMAGE=conanio/gcc8
+        - CONAN_PACKAGE_VERSION="0.1.0"
+        - CONAN_USERNAME="hopobcn"
+        - CONAN_PACKAGE_NAME="simpleton"
+        - CONAN_HEADER_ONLY="True"
+        - CONAN_UPLOAD="https://api.bintray.com/conan/hopobcn/public"
+        - secure: mpx6qypPN3OFO4RZS/Kg6dAAAzizoM/Rz2e1L3S/9wjD3h/pN324JZbbKlmDixNVVSbbdHH74Z6HxCjQ9fFUOUYs+eLhwxlKt3wpgMTW2Sqraw+PqgUyU+H11D4nrcRNvpZbSQBB2WZP8PLSyzlSD1XlNkNgCqXXcV5A0dpSXm+6P8c5A/3hQ2i5x3x6Y1IAlfnvQO2HAGI5VD9XhLC280jydYNSaageKUgsXbN3p5bnjfWPcybOoK8i159mjkM1MOZX2awVqIrqXSyTtqbKPEhjY3h9/wBAXZG8iONef9rbiPKId31wnhtXzURTd93z5GjK52z0Khn2VKNcBh0dA5kU+6yVEAOoHIGRz0/Vskdgt60bMsIdWrftb9j16aegTiFprrJ66uARo6Mf9GHUM4z8dF7GiU3RNn7dwKiqWJ0HxMaXhNQuVONARVP/tKYAf9NadQ2DMCxTrfxFZqIjxXMJ9zwoA6wkJDwEHuGmEyjgRwBHVa9JG23Lqc8Bdg5M07RYWbZWQBXsRAvvr8QfCninP1eYgfECMfZ5PCOCvu9gTeZJRV+68nMXexNxR2K8U+a9c2PgGc9pUxZPkdxYc1ejXTgObV7IbaPAw8CoXU13JIpUjRlweECBMMIE5UxCaBF+baq1hPWKb9PWg6sI8x3YYm2dwy2kLjyDp+7Rjrg=
+        - secure: rwJ0Nq4QiGd300uA7gq/WYiNvDGaYJQsgVILdhxkP5kylRjuQdxw9lWvzyHy7bWMJCHi/L1N8OjSkgnpYo4T8u93JqXzgQMVJAMvH967MRK18Mf7+rp/DL5lOjVJfmZIPtMnFXTvglxgEhX41WoBaD5aist65k76TXUvsCErZUL2Ptgzs0dOb5AltyAz0LMBsWuzC3+IRhG7DiUB+GX0Q0HLiu3UlmRnTAHpmVcaGRH385UUzMM3eX9LwR3Fey9fJsY/Ggjuuxa6hMhinkQIgVcggqM4hqqFgJ4bCeuazYICSh6JAde5/yxEC1C35eqp3f+gWf5NZa0cRmPvgjwLws+LP6sYIO4wodJkr3iQHphQxYXkhUIVqt8sDtfFuysjl6D9+Cgli0YHFwkTJ9CW7X44JWrn/5/Yyt3O/u2yvrdbP2l5RwpjPig514CUxPFzz9UD7sv4To5w31nOLTy/veqh/E4YidoTZbZ0A353CYgWZ/vQnml4JclVPt6a6gLQEsetzmyx0CGG8w7usinTC0wmCP3Lz4AwAThjUNMD0zJjX8ugIE5O0gIY5SCR5XFrnIXbstc7JyXw2njeVyn4AGxw4T0fCNkg4Fb5SO+qzQVeBF3+leKS76vSc5fsytbfixm909NZIw1reGeAxAkqH74rApaDMkTpWSSc4wABCgs=
+      services:
+        - docker
+      install:
+        - chmod +x ./conan/ci/install.sh
+        - "./conan/ci/install.sh"
+      script:
+        - chmod +x ./conan/ci/build.sh
+        - "./conan/ci/build.sh"
+
+# enable cache
+cache:
+  directories:
+    - ${HOME}/.cache/pip
