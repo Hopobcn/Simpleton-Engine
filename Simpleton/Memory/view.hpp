@@ -10,6 +10,7 @@
 #define engine_memory_view_hpp
 
 #include "buffer.hpp"
+#include <memory>
 
 namespace Memory {
   ///A Primitive type memory view. For types that don't need their

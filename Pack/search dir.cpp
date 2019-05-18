@@ -9,7 +9,9 @@
 #include "search dir.hpp"
 
 #include <dirent.h>
+#include <memory>
 #include <iostream>
+#include <algorithm>
 #include <Simpleton/Utils/profiler.hpp>
 
 DirSearchError::DirSearchError()

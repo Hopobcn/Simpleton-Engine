@@ -11,6 +11,7 @@
 
 #include <new>
 #include <cstring>
+#include <cstddef>
 
 namespace Memory {
   /// Allocate memory. Allocation failure results in std::terminate

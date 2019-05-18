@@ -10,6 +10,7 @@
 #define pack_rects_hpp
 
 #include <vector>
+#include <stdexcept>
 #include "stb_rect_pack.h"
 
 class RectPackError final : public std::runtime_error {

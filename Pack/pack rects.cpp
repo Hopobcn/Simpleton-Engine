@@ -9,6 +9,7 @@
 #include "pack rects.hpp"
 
 #include <cmath>
+#include <climits>
 #include <iostream>
 #include <Simpleton/Utils/profiler.hpp>
 
